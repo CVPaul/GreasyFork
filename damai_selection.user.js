@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         大麦抢票（选场次票价人数）
-// @namespace    https://www.jwang0614.top/scripts
+// @name         damai_selection
+// @namespace    https://github.com/CVPaul/GreasyFork.git
 // @version      0.6
 // @description  辅助购买大麦网演唱会门票
-// @author       Olivia Wang
+// @author       Paul Li
 // @match        https://detail.damai.cn/*
 // @grant        none
 // ==/UserScript==
@@ -16,10 +16,10 @@
         return null;
     }
 
-
-
     /****  改人数  ***/
     var people_num = 2;
+    var slc_event_index = [];
+    var slc_price_index = [6,4,5,0,1,2,3];
 
     var storage = window.localStorage;
     storage.setItem("people_num", people_num);
@@ -66,9 +66,8 @@
     }
 
     function timedRefresh(timeoutPeriod) {
-        // window.setTimeout("location.reload(true);",timeoutPeriod);
+        window.setTimeout(location.reload(true),timeoutPeriod);
     }
-
 
     start.onclick = function() {
         console.log('开始抢票！');
@@ -77,9 +76,9 @@
         storage.setItem("isRunning", true);
 
         get_numbers_from_page();
-        set_up_check_page();
+        // set_up_check_page();
 
-        timedRefresh(400);
+        timedRefresh(500);
 
     };
 
@@ -92,7 +91,6 @@
         storage.removeItem("event_ele_num");
         storage.removeItem("people_num");
         storage.clear();
-
     };
 
     function sleep (time) {
@@ -113,29 +111,26 @@
             }
 
         }
-
         var event_selections = document.querySelectorAll('body > div.perform > div > div.flex1 > div.hd > div > div.order > div.perform__order__box > div.perform__order__select.perform__order__select__performs > div.select_right > .select_right_list > .select_right_list_item');
 
         event_selections[event_ele_num].click();
         console.log("event");
 
-        sleep(200).then(() => {
+        sleep(50).then(() => {
             var price_selections = document.querySelectorAll('body > div.perform > div > div.flex1 > div.hd > div > div.order > div.perform__order__box > div.perform__desc__info + div > div.select_right > .select_right_list > .select_right_list_item');
 
             if (price_selections[price_ele_num]) {
                 price_selections[price_ele_num].click();
                 console.log("price");
-
-                sleep(100).then(()=>{
-                var people_selection = document.querySelector(".cafe-c-input-number-input");
-
-                if (people_selection) {
-                    var people_inc_btn = document.querySelector('a.cafe-c-input-number-handler.cafe-c-input-number-handler-up');
-                    for (var i =1; i < people_num; i++) {
-                        people_inc_btn.click();
-                        console.log("inc");
-                    }
-
+                sleep(50).then(()=>{
+                    var people_selection = document.querySelector(".cafe-c-input-number-input");
+                    if (people_selection) {
+                        var people_inc_btn = document.querySelector('a.cafe-c-input-number-handler.cafe-c-input-number-handler-up');
+                        for (var i =1; i < people_num; i++) {
+                            people_inc_btn.click();
+                            console.log("inc");
+                        }
+                    };
                     sleep(50).then(()=>{
                         var btn = document.querySelector("body > div.perform > div > div.flex1 > div.hd > div > div.order > div.perform__order__box > div:last-child > div");
                         console.log(btn);
@@ -151,16 +146,11 @@
                         }
 
                     });
-                }
-
-                if (storage.getItem("isRunning") == "true") {
-                    console.log("refreshing");
-                    timedRefresh(1000);
-                }
-
+                    if (storage.getItem("isRunning") == "true") {
+                        console.log("refreshing");
+                        timedRefresh(100);
+                    }
             });
-
-
             } else {
                 console.log("price_selections not found");
                 timedRefresh(400);
@@ -171,34 +161,49 @@
     function get_numbers_from_page() {
         var event_selections = document.querySelectorAll('body > div.perform > div > div.flex1 > div.hd > div > div.order > div.perform__order__box > div.perform__order__select.perform__order__select__performs > div.select_right > div > div');
         var price_selections = document.querySelectorAll('body > div.perform > div > div.flex1 > div.hd > div > div.order > div.perform__order__box > div.perform__desc__info + div > div.select_right > div > div');
-        var slc_event_index = []
-        var slc_price_index = []
-        for (var i = 0;i < event_selections.length;i++) {
-            if (slc_event_index.length > 0 && slc_event_index.indexOf(i) < 0){
-                console.log("%s:%s not in slc_event_index:%s, continue!",i,event_selections[i].innerHTML,slc_event_index);
-                continue;
+        if (slc_event_index.length > 0){
+            for (var idx0 = 0; idx0 < slc_event_index.length; idx0++){
+                var i0 = slc_event_index[idx0];
+                if (event_selections[i0].classList.contains("active")) {
+                    storage.setItem("event_ele_num", i0);
+                    break;
+                }
             }
-            if (event_selections[i].classList.contains("active")) {
-                storage.setItem("event_ele_num", i);
-                break;
-            }
-        }
-
-        for (var j= 0;j < price_selections.length;j++) {
-            if (slc_price_index.length > 0 && slc_price_index.indexOf(j) < 0){
-                console.log("%s:%s not in slc_price_index:%s, continue!",j,price_selections[j].innerHTML,slc_price_index);
-                continue;
-            }
-            if (price_selections[j].classList.contains("active")) {
-                storage.setItem("price_ele_num", j);
-                break;
+        }else{
+            for (var i = 0;i < event_selections.length;i++) {
+                if (event_selections[i].classList.contains("active")) {
+                    storage.setItem("event_ele_num", i);
+                    break;
+                }
             }
         }
-
+        if (slc_price_index.length > 0){
+            for (var idx1 = 0; idx1 < slc_price_index.length; idx1++){
+                var j0 = slc_price_index[idx1];
+                if (price_selections[j0]) {
+                    // price_selections[j0].classList.contains("active")
+                    // console.log('check',price_selections[j0].querySelector('span.notticket'));
+                    if (price_selections[j0].querySelector('span.notticket')){
+                        continue;
+                    }
+                    price_selections[j0].click();
+                    storage.setItem("price_ele_num", j0);
+                    break;
+                }
+            }
+            // price_selections.length();
+        }else{
+            for (var j= 0;j < price_selections.length;j++) {
+                if (price_selections[j].classList.contains("active")) {
+                    storage.setItem("price_ele_num", j);
+                    break;
+                }
+            }
+        }
     }
 
     function reload_page() {
-        console.log("reload");
+        //console.log("reload");
         //alert(storage.getItem("isRunning"));
         window.setTimeout(set_up_check_page,100);
     }
